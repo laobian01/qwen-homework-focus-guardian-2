@@ -214,7 +214,6 @@ function App() {
         newStats.distractionCount += 1;
       } else if (newStatus === FocusStatus.BAD_POSTURE) {
         newStats.postureAlertCount = (newStats.postureAlertCount || 0) + 1;
-        // Also count as focus time since they are present and working (just bad posture)
         newStats.totalFocusTimeSeconds += Math.floor(validElapsed);
       }
 
@@ -251,7 +250,7 @@ function App() {
       let finalMessage = result.message;
 
       // If distraction detected, check streak
-      if (result.status === FocusStatus.DISTRACTED || result.status === FocusStatus.ABSENT) {
+      if (result.status === FocusStatus.DISTRACTED || result.status === FocusStatus.ABSENT || result.status === FocusStatus.BAD_POSTURE) {
           distractionStreakRef.current += 1;
           
           // If streak is less than threshold, IGNORE IT (Mask as Focused)
