@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Square, History, LayoutDashboard, Home, Settings, Trophy, Activity, SwitchCamera, Lock, Unlock, Crown, AlertCircle, Bell, Send, QrCode } from 'lucide-react';
+import { Play, Square, History, LayoutDashboard, Home, Settings, Trophy, Activity, SwitchCamera, Lock, Unlock, Crown, AlertCircle, Bell, Send, QrCode, Palette } from 'lucide-react';
 import CameraFeed, { CameraHandle } from './components/CameraFeed';
 import StatusIndicator from './components/StatusIndicator';
 import StatsView from './components/StatsView';
@@ -21,6 +20,48 @@ const ALERT_THRESHOLD = 2; // Require 2 consecutive bad frames to alert (buffer 
 const WX_APP_TOKEN = "AT_xlpTGmVWlueGNGlft6UvD8ecGAwVW3kv"; 
 
 type ViewMode = 'monitor' | 'stats' | 'settings';
+
+// --- Custom Logos ---
+const BearLogoFace = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="45" fill="currentColor" fillOpacity="0.2" />
+    <circle cx="50" cy="55" r="35" fill="currentColor" />
+    {/* Ears */}
+    <circle cx="20" cy="25" r="12" fill="currentColor" />
+    <circle cx="80" cy="25" r="12" fill="currentColor" />
+    {/* Glasses */}
+    <g stroke="white" strokeWidth="3">
+        <circle cx="38" cy="50" r="10" fill="black" fillOpacity="0.3"/>
+        <circle cx="62" cy="50" r="10" fill="black" fillOpacity="0.3"/>
+        <path d="M48 50 L52 50" />
+    </g>
+    {/* Snout */}
+    <ellipse cx="50" cy="65" rx="12" ry="8" fill="white" fillOpacity="0.8" />
+    <circle cx="50" cy="63" r="3" fill="black" />
+  </svg>
+);
+
+const BearLogoPaw = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 55 C35 55 25 45 25 35 C25 25 35 15 50 15 C65 15 75 25 75 35 C75 45 65 55 50 55 Z" opacity="0.8"/>
+    <circle cx="20" cy="30" r="10" />
+    <circle cx="35" cy="10" r="10" />
+    <circle cx="65" cy="10" r="10" />
+    <circle cx="80" cy="30" r="10" />
+    {/* Checkmark */}
+    <path d="M40 35 L48 43 L60 27" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+  </svg>
+);
+
+const BearLogoMinimal = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className} stroke="currentColor" fill="none" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round">
+     <path d="M30 30 L20 20 M70 30 L80 20" /> {/* Ears abstract */}
+     <rect x="25" y="30" width="50" height="50" rx="15" /> {/* Head */}
+     <circle cx="40" cy="50" r="5" fill="currentColor" stroke="none"/>
+     <circle cx="60" cy="50" r="5" fill="currentColor" stroke="none"/>
+     <path d="M45 65 Q50 70 55 65" /> {/* Smile */}
+  </svg>
+);
 
 function App() {
   const cameraRef = useRef<CameraHandle>(null);
@@ -46,7 +87,7 @@ function App() {
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [wxUid, setWxUid] = useState("");
   const lastNotificationTimeRef = useRef<number>(0);
-  const distractionStreakRef = useRef<number>(0); // Counter for consecutive distractions
+  const distractionStreakRef = useRef<number>(0); 
 
   // Gamification State
   const [stats, setStats] = useState<UserStats>({
@@ -69,7 +110,7 @@ function App() {
   const lastCheckTimeRef = useRef<number>(Date.now());
   const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
-  // Initialize: Load Settings & Daily Usage
+  // Initialize
   useEffect(() => {
     const loadVoices = () => {
       voicesRef.current = window.speechSynthesis.getVoices();
@@ -86,7 +127,6 @@ function App() {
     const savedIsPro = localStorage.getItem('focus_guardian_is_pro');
     if (savedIsPro === 'true') setIsPro(true);
 
-    // Load Notification Settings
     const savedNotify = localStorage.getItem('focus_notify_enabled');
     const savedUid = localStorage.getItem('focus_wx_uid');
     if (savedNotify === 'true') setNotifyEnabled(true);
@@ -109,7 +149,6 @@ function App() {
     localStorage.setItem('focus_guardian_daily_usage', dailyUsage.toString());
   }, [dailyUsage]);
 
-  // Save Notification Settings
   const handleSaveNotification = (enabled: boolean, uid: string) => {
     setNotifyEnabled(enabled);
     setWxUid(uid);
@@ -122,10 +161,9 @@ function App() {
         alert("请先填写您的微信 UID");
         return;
     }
-    // Use hardcoded APP_TOKEN
-    const success = await sendWeChatNotification(WX_APP_TOKEN, [wxUid], "【专注卫士】测试消息：连接成功！孩子分心时您将收到通知。");
+    const success = await sendWeChatNotification(WX_APP_TOKEN, [wxUid], "【专注熊】测试消息：连接成功！孩子分心时您将收到通知。");
     if (success) alert("发送成功！请查看微信。");
-    else alert("发送失败，请检查 UID 是否正确，或是否已关注应用二维码。");
+    else alert("发送失败，请检查 UID 是否正确。");
   };
 
   const handleActivate = () => {
@@ -282,12 +320,11 @@ function App() {
       if (finalStatus === FocusStatus.DISTRACTED || finalStatus === FocusStatus.ABSENT || finalStatus === FocusStatus.BAD_POSTURE) {
         speak(finalMessage, finalStatus);
         
-        // Use Hardcoded Token
         if (notifyEnabled && WX_APP_TOKEN && WX_APP_TOKEN.startsWith("AT_") && wxUid) {
             const now = Date.now();
             if (now - lastNotificationTimeRef.current > NOTIFICATION_COOLDOWN_MS) {
                 const statusText = finalStatus === FocusStatus.BAD_POSTURE ? '坐姿不端' : (finalStatus === FocusStatus.DISTRACTED ? '分心' : '离开座位');
-                const content = `【专注卫士】提醒：检测到孩子${statusText}。\n当前状态：${finalMessage}`;
+                const content = `【专注熊】提醒：检测到孩子${statusText}。\n当前状态：${finalMessage}`;
                 
                 sendWeChatNotification(WX_APP_TOKEN, [wxUid], content)
                     .then((success: boolean) => {
@@ -388,7 +425,7 @@ function App() {
   };
 
   return (
-    <div className={`flex flex-col h-[100dvh] w-full max-w-md mx-auto bg-gradient-to-b ${getBackgroundClass()} transition-colors duration-700 ease-in-out shadow-2xl overflow-hidden relative font-sans text-gray-100`}>
+    <div className={`flex flex-col h-screen w-full max-w-md mx-auto bg-gradient-to-b ${getBackgroundClass()} transition-colors duration-700 ease-in-out shadow-2xl overflow-hidden relative font-sans text-gray-100`}>
       
       {/* Limit Modal */}
       {showLimitModal && (
@@ -442,12 +479,13 @@ function App() {
       {/* Header */}
       <header className="px-5 py-4 bg-gray-900/60 backdrop-blur-xl z-20 flex justify-between items-center border-b border-white/5 sticky top-0 shrink-0">
         <div className="flex items-center gap-2">
-           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-             <Activity size={18} className="text-white" />
+           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white p-1">
+             {/* LOGO A: Bear Face (Default) */}
+             <BearLogoFace />
            </div>
            <div>
              <h1 className="text-lg font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              专注卫士
+              专注熊
             </h1>
             {isPro ? (
                 <span className="text-[10px] text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded border border-yellow-500/20 ml-1">PRO</span>
@@ -594,6 +632,34 @@ function App() {
             <div className="h-full overflow-y-auto custom-scrollbar">
                 <div className="p-5 space-y-6 animate-in fade-in duration-300 pb-24">
                     <h2 className="text-2xl font-bold text-white mb-2">设置</h2>
+                    
+                    {/* --- LOGO PREVIEW SECTION --- */}
+                    <div className="bg-gray-800/40 p-4 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-2 mb-3 text-gray-300 text-sm font-bold">
+                            <Palette size={16} />
+                            <span>Logo 方案预览 (供印制参考)</span>
+                        </div>
+                        <div className="flex justify-around items-center gap-4">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-16 h-16 bg-blue-600 rounded-xl p-2 flex items-center justify-center text-white shadow-lg">
+                                    <BearLogoFace />
+                                </div>
+                                <span className="text-[10px] text-gray-500">萌脸款</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-16 h-16 bg-indigo-600 rounded-full p-3 flex items-center justify-center text-white shadow-lg">
+                                    <BearLogoPaw />
+                                </div>
+                                <span className="text-[10px] text-gray-500">熊掌款</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-16 h-16 border-2 border-white/20 rounded-xl p-3 flex items-center justify-center text-white">
+                                    <BearLogoMinimal />
+                                </div>
+                                <span className="text-[10px] text-gray-500">线条款</span>
+                            </div>
+                        </div>
+                    </div>
                     
                     {/* --- PRO ACTIVATION CARD --- */}
                     <div className={`relative p-6 rounded-2xl overflow-hidden border ${isPro ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-yellow-500/30' : 'bg-gradient-to-br from-yellow-600 to-yellow-800 border-yellow-400/50'}`}>
